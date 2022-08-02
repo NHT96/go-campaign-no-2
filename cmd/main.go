@@ -8,6 +8,7 @@ import (
 	"os"
 	"time"
 
+	structs "github.com/NHT96/go-campaign-no-2/pkg/structs"
 	"github.com/urfave/cli/v2"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -32,14 +33,6 @@ func init() {
 	}
 
 	collection = client.Database("tasker").Collection("tasks")
-}
-
-type Task struct {
-	ID        primitive.ObjectID `bson:"_id"`
-	CreatedAt time.Time          `bson:"created_at"`
-	UpdatedAt time.Time          `bson:"updated_at"`
-	Text      string             `bson:"text"`
-	Completed bool               `bson:"completed"`
 }
 
 func main() {
@@ -71,7 +64,7 @@ func main() {
 						return errors.New("Cannot add an empty task")
 					}
 
-					task := &Task{
+					task := &structs.Task{
 						ID:        primitive.NewObjectID(),
 						CreatedAt: time.Now(),
 						UpdatedAt: time.Now(),
@@ -151,7 +144,7 @@ func main() {
 	}
 }
 
-func printTasks(tasks []*Task) {
+func printTasks(tasks []*structs.Task) {
 	for i, v := range tasks {
 		if v.Completed {
 			color.Green.Printf("%d: %s\n", i+1, v.Text)
@@ -161,20 +154,20 @@ func printTasks(tasks []*Task) {
 	}
 }
 
-func createTask(task *Task) error {
+func createTask(task *structs.Task) error {
 	_, err := collection.InsertOne(ctx, task)
 	return err
 }
 
-func getAll() ([]*Task, error) {
+func getAll() ([]*structs.Task, error) {
 	// passing bson.D{{}} matches all documents in the collection
 	filter := bson.D{{}}
 	return filterTasks(filter)
 }
 
-func filterTasks(filter interface{}) ([]*Task, error) {
+func filterTasks(filter interface{}) ([]*structs.Task, error) {
 	// A slice of tasks for storing the decoded documents
-	var tasks []*Task
+	var tasks []*structs.Task
 
 	cur, err := collection.Find(ctx, filter)
 	if err != nil {
@@ -183,7 +176,7 @@ func filterTasks(filter interface{}) ([]*Task, error) {
 
 	// Iterate through the cursor and decode each document one at a time
 	for cur.Next(ctx) {
-		var t Task
+		var t structs.Task
 		err := cur.Decode(&t)
 		if err != nil {
 			return tasks, err
@@ -213,11 +206,11 @@ func completeTask(text string) error {
 		primitive.E{Key: "completed", Value: true},
 	}}}
 
-	t := &Task{}
+	t := &structs.Task{}
 	return collection.FindOneAndUpdate(ctx, filter, update).Decode(t)
 }
 
-func getPending() ([]*Task, error) {
+func getPending() ([]*structs.Task, error) {
 	filter := bson.D{
 		primitive.E{Key: "completed", Value: false},
 	}
@@ -225,7 +218,7 @@ func getPending() ([]*Task, error) {
 	return filterTasks(filter)
 }
 
-func getFinished() ([]*Task, error) {
+func getFinished() ([]*structs.Task, error) {
 	filter := bson.D{
 		primitive.E{Key: "completed", Value: true},
 	}
